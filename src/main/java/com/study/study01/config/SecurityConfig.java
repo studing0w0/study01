@@ -12,11 +12,22 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.encrypt.AesBytesEncryptor;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.MessageDigestPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.xml.bind.DatatypeConverter;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 
 /*
     WebSecurityConfigureAdapter는 spring security 5.7 이상에서 더이상 사용 못 함
@@ -39,7 +50,7 @@ public class SecurityConfig {
                 )
             */    .authorizeHttpRequests(request -> request
                         .requestMatchers(
-                                "/sign", "/home"
+                                "/*"
                         )
                         .permitAll()
                 )
@@ -59,11 +70,39 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
+        log.info("passwordEncoder ::: ");
+        return passwordEncoder("sha256");
     }
 
     @Bean
-    public AesBytesEncryptor aesBytesEncryptor(){return new AesBytesEncryptor("password", "salt");}
+    public AesBytesEncryptor aesBytesEncryptor() throws UnsupportedEncodingException {
+        log.info("passwordEncoder ::: ");
+        return new AesBytesEncryptor("password", getStringToHex("test"));
+    }
 
+    private String getStringToHex(String testStr) throws UnsupportedEncodingException {
+        byte[] testBytes = testStr.getBytes("UTF-8");
+        return DatatypeConverter.printHexBinary(testBytes);
+    }
+
+    public PasswordEncoder passwordEncoder(String type){
+        Map<String, PasswordEncoder> encoders = new HashMap<>();
+        encoders.put("bcrypt", new BCryptPasswordEncoder());
+        encoders.put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder());
+        encoders.put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder());
+        encoders.put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"));
+        encoders.put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
+        encoders.put("pbkdf2", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_5());
+        encoders.put("pbkdf2@SpringSecurity_v5_8", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+        encoders.put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v4_1());
+        encoders.put("scrypt@SpringSecurity_v5_8", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
+        encoders.put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"));
+        encoders.put("SHA-256",
+                new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"));
+        encoders.put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder());
+        encoders.put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_2());
+        encoders.put("argon2@SpringSecurity_v5_8", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+        return new DelegatingPasswordEncoder(type, encoders);
+    }
 
 }

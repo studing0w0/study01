@@ -1,33 +1,14 @@
 package com.study.study01.member.service;
 
-import com.study.study01.member.entity.Member;
-import com.study.study01.member.repository.MemberRepository;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+import com.study.study01.member.domain.Member;
 
-import java.util.Random;
+import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-public class MemberService {
-    private final MemberRepository memberRepository;
 
-    public void insertMember(Member member){
-        member.setIdCd(generateRandomKey());
-        memberRepository.save(member);
-    }
+public interface MemberService {
+    void save(Member member) throws Exception;
 
-    private String generateRandomKey(){
-        Random r = new Random();
-        String key = (char)(r.nextInt(26)+'A')+"";
-        for(int i=0; i<9; i++){
-            key = key+r.nextInt(9);
-        }
-        return key;
+    List<Member> checkMember(String email);
 
-    }
 
 }
